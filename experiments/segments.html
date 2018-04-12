@@ -40,6 +40,7 @@ class Map {
 
   _intersects(p1, p2) {
     if (!p1.n || !p2.n) return;
+    if (p1.n === 0 && p2.n === 0) return;
     var ma = (p1.n.y - p1.y) / (p1.n.x - p1.x);
     var mb = (p2.n.y - p2.y) / (p2.n.x - p2.x);
     if (ma === mb) {
@@ -49,6 +50,9 @@ class Map {
     var bb = p2.y - mb*p2.x;
     var x = (ba - bb)/(mb - ma);
     var y = ma*x + ba;
+    if (x < this._less(p2.x, p2.n.x) || x > this._greater(p2.x, p2.n.x)) {
+      return;
+    }
     if (x < this._less(p1.x, p1.n.x) || x > this._greater(p1.x, p1.n.x)) {
       return;
     }
