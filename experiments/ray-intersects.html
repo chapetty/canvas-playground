@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head><title>Line Intersection Test</title>
+<style>
+h3 {
+  text-align: center;
+}
+</style>
+<body>
+<h3>ray intersection test</h3>
+<canvas id="doodleArea" width="600" height="600" style="display: block; margin: 0 auto;" />
+
+<script>
+
+var SegmentPoint = (x, y) => {
+  return {
+    x: x,
+    y: y,
+    n: undefined,
+  };
+};
+
+class Map {
+
+  constructor() {
+    this._points = [];
+    this._state = {
+      isDrawing: false
+    };
+  }
+
+  _less(a, b) {
+    return (a < b ? a : b);
+  }
+
+  _greater(a, b) {
+    return (a > b ? a : b);
+  }
+
+  _rayIntersects(ray, sp) {
+    if (!sp.n) return;
+    
+    // find the slope and intercept of ray
+    //var rayx = Math.cos(ray.a);
+    //var rayy = Math.sin(ray.a);
+    var rayx = ray.dx;
+    var rayy = ray.dy;
+    var rayM = (rayy - ray.y) / (rayx - ray.x);
+    var rayB = ray.y - rayM*ray.x;
+
+    // find slope and intercept of segment
+    var segM = (sp.n.y - sp.y) / (sp.n.x - sp.x);
+    var segB = sp.y - segM*sp.x;
+
+    // the point at which the two instersect
+    var x = (rayB - segB)/(segM - rayM);
+    var y = rayM*x + rayB;
+
+    // check if point is on segment
+    if (x < this._less(sp.x, sp.n.x) || x > this._greater(sp.x, sp.n.x)) return;
+    // and if point is in direction of ray
+    if ((ray.x - x) * (ray.x - rayx) < 0) return;
+
+    return {x, y};
+  }
+
+  addRectangle(x, y, dx, dy) {
+    var topLeft = SegmentPoint(x, y);
+    var topRight = SegmentPoint(x + dx, y);
+    var bottomRight = SegmentPoint(x + dx, y + dy);
+    var bottomLeft = SegmentPoint(x, y + dy);
+    topLeft.n = topRight;
+    topRight.n = bottomRight;
+    bottomRight.n = bottomLeft;
+    bottomLeft.n = topLeft;
+
+    this._points.push(topLeft);
+    this._points.push(topRight);
+    this._points.push(bottomRight);
+    this._points.push(bottomLeft);
+  }
+
+  addPoint(x, y) {
+    var p = SegmentPoint(x, y);
+
+    if (this._state.isDrawing) {
+      if (this._points.length > 0) {
+        this._points[this._points.length - 1].n = p;
+      }
+      this._state.isDrawing = false;
+    } else {
+      this._state.isDrawing = true;
+    }
+
+    this._points.push(p);
+  }
+
+  draw(context) {
+    // draw ray
+    context.save();
+    context.strokeStyle = 'red';
+    var rayLength = 30;
+    var norm = Math.sqrt(Math.pow(mouse.x-300, 2) + Math.pow(mouse.y-300, 2));
+    var x_norm = (mouse.x-300)/norm;
+    var y_norm = (mouse.y-300)/norm;
+    context.beginPath();
+    context.moveTo(300, 300);
+    context.lineTo(300 + x_norm*rayLength, 300 + y_norm*rayLength);
+    context.stroke();
+    context.restore();
+
+    // draw line segments
+    context.beginPath();
+    this._points.forEach((point) => {
+      context.moveTo(point.x, point.y);
+      if (point.n) {
+        context.lineTo(point.n.x, point.n.y);
+      }
+    });
+    context.stroke();
+
+   for (var i = 0; i < this._points.length; i++) {
+      var test = this._rayIntersects({
+        x: 300,
+        y: 300,
+        dx: mouse.x,
+        dy: mouse.y
+      }, this._points[i]);
+
+      if (test) {
+        context.translate(test.x, test.y);
+        context.beginPath();
+        context.arc(0, 0, 4, 0, Math.PI*2);
+        context.stroke();
+        context.setTransform(1, 0, 0, 1, 0, 0);
+      }
+    }
+
+    if (this._state.isDrawing) {
+      var p = this._points[this._points.length - 1];
+      context.beginPath();
+      context.moveTo(p.x, p.y);
+      context.lineTo(mouse.x, mouse.y);
+      context.stroke();
+    }
+  }
+
+}
+
+var mouse = {
+  x: undefined,
+  y: undefined
+};
+
+var state = {
+  update: false
+};
+
+function setup() {
+  var canvas = document.getElementById('doodleArea');
+  var context = canvas.getContext('2d');
+  var map = new Map();
+  map.addRectangle(0, 0, canvas.width, canvas.height);
+
+  window.map = map;
+
+  var draw = () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.translate(mouse.x, mouse.y);
+    context.beginPath();
+    context.moveTo(-5, 0);
+    context.lineTo(5, 0);
+    context.moveTo(0, -5);
+    context.lineTo(0, 5);
+    context.stroke();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    map.draw(context);
+    state.update = false;
+  };
+
+  canvas.addEventListener('mousemove', (e) => {
+    mouse.x = e.offsetX;
+    mouse.y = e.offsetY;
+    state.update = true;
+  });
+
+  canvas.addEventListener('click', (e) => {
+    map.addPoint(mouse.x, mouse.y);
+    state.update = true;
+  });
+
+  window.setInterval(() => {
+    if (state.update) {
+      window.requestAnimationFrame(draw);
+    }
+  }, 20);
+}
+
+setup();
+
+</script>
+
+</body>
+</html>
