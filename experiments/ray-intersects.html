@@ -139,7 +139,9 @@ class Map {
     });
     context.stroke();
 
-   for (var i = 0; i < this._points.length; i++) {
+    var intersections = [];
+
+    for (var i = 0; i < this._points.length; i++) {
       var test = this._rayIntersects({
         x: 300,
         y: 300,
@@ -148,12 +150,26 @@ class Map {
       }, this._points[i]);
 
       if (test) {
-        context.translate(test.x, test.y);
-        context.beginPath();
-        context.arc(0, 0, 4, 0, Math.PI*2);
-        context.stroke();
-        context.setTransform(1, 0, 0, 1, 0, 0);
+        intersections.push(test);
+        //context.translate(test.x, test.y);
+        //context.beginPath();
+        //context.arc(0, 0, 4, 0, Math.PI*2);
+        //context.stroke();
+        //context.setTransform(1, 0, 0, 1, 0, 0);
       }
+    }
+
+    intersections.sort((a, b) => {
+      return Math.sqrt(Math.pow(a.x - 300, 2) + Math.pow(a.y - 300, 2)) -
+        Math.sqrt(Math.pow(b.x - 300, 2) + Math.pow(b.y - 300, 2));
+    });
+
+    if (intersections.length > 0) {
+      context.translate(intersections[0].x, intersections[0].y);
+      context.beginPath();
+      context.arc(0, 0, 4, 0, Math.PI*2);
+      context.stroke();
+      context.setTransform(1, 0, 0, 1, 0, 0);
     }
 
     if (this._state.isDrawing) {
@@ -196,7 +212,6 @@ function setup() {
     context.setTransform(1, 0, 0, 1, 0, 0);
 
     map.draw(context);
-    state.update = false;
   };
 
   canvas.addEventListener('mousemove', (e) => {
@@ -213,8 +228,11 @@ function setup() {
   window.setInterval(() => {
     if (state.update) {
       window.requestAnimationFrame(draw);
+      state.update = false;
     }
   }, 20);
+
+  state.update = true;
 }
 
 setup();
