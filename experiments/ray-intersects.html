@@ -45,23 +45,43 @@ class Map {
     //var rayy = Math.sin(ray.a);
     var rayx = ray.dx;
     var rayy = ray.dy;
-    var rayM = (rayy - ray.y) / (rayx - ray.x);
-    var rayB = ray.y - rayM*ray.x;
+    var rayM = undefined;
+    var rayB = undefined;
+    if (rayx !== ray.x) {
+      rayM = (rayy - ray.y) / (rayx - ray.x);
+      rayB = ray.y - rayM*ray.x;
+    }
 
     // find slope and intercept of segment
-    var segM = (sp.n.y - sp.y) / (sp.n.x - sp.x);
-    var segB = sp.y - segM*sp.x;
+    var segM = undefined;
+    var segB = undefined;
+    if (sp.x !== sp.n.x) {
+      segM = (sp.n.y - sp.y) / (sp.n.x - sp.x);
+      segB = sp.y - segM*sp.x;
+    }
 
     // the point at which the two instersect
-    var x = (rayB - segB)/(segM - rayM);
-    var y = rayM*x + rayB;
+    var p = {
+      x: undefined,
+      y: undefined
+    };
+    if (rayM === undefined) {
+      p.x = ray.x;
+      p.y = segM*p.x + segB;
+    } else if (segM === undefined) {
+      p.x = sp.x;
+      p.y = rayM*p.x + rayB;
+    } else {
+      p.x = (rayB - segB)/(segM - rayM);
+      p.y = rayM*p.x + rayB;
+    }
 
     // check if point is on segment
-    if (x < this._less(sp.x, sp.n.x) || x > this._greater(sp.x, sp.n.x)) return;
+    if (p.x < this._less(sp.x, sp.n.x) || p.x > this._greater(sp.x, sp.n.x)) return;
     // and if point is in direction of ray
-    if ((ray.x - x) * (ray.x - rayx) < 0) return;
+    if ((ray.x - p.x) * (ray.x - rayx) < 0) return;
 
-    return {x, y};
+    return p;
   }
 
   addRectangle(x, y, dx, dy) {
