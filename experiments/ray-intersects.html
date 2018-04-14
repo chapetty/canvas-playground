@@ -8,7 +8,7 @@ h3 {
 </style>
 <body>
 <h3>ray intersection test</h3>
-<canvas id="doodleArea" width="600" height="600" style="display: block; margin: 0 auto;" />
+<canvas id="doodleArea" width="600" height="600" style="display: block; margin: 0 auto; border: 1px solid black;" />
 
 <script>
 
@@ -60,6 +60,9 @@ class Map {
       segB = sp.y - segM*sp.x;
     }
 
+    // don't bother returning an intersection if slopes are the same
+    if (rayM === segM) return;
+
     // the point at which the two instersect
     var p = {
       x: undefined,
@@ -78,8 +81,15 @@ class Map {
 
     // check if point is on segment
     if (p.x < this._less(sp.x, sp.n.x) || p.x > this._greater(sp.x, sp.n.x)) return;
+    else if (p.x === sp.x) {
+      if (p.y < this._less(sp.y, sp.n.y) || p.y > this._greater(sp.y, sp.n.y)) return;
+    }
     // and if point is in direction of ray
-    if ((ray.x - p.x) * (ray.x - rayx) < 0) return;
+    if ((ray.x - p.x) * (ray.x - rayx) < 0) {
+      return;
+    } else if ((ray.x - p.x) * (ray.x - rayx) === 0) {
+      if ((ray.y - p.y) * (ray.y - rayy) < 0) return;
+    }
 
     return p;
   }
@@ -196,7 +206,7 @@ function setup() {
   var canvas = document.getElementById('doodleArea');
   var context = canvas.getContext('2d');
   var map = new Map();
-  map.addRectangle(0, 0, canvas.width, canvas.height);
+  map.addRectangle(50, 50, canvas.width - 100, canvas.height - 100);
 
   window.map = map;
 
