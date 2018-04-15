@@ -12,11 +12,18 @@ h3 {
 
 <script>
 
-var SegmentPoint = (x, y) => {
+var Point = (x, y) => {
   return {
     x: x,
     y: y,
-    n: undefined,
+    s: undefined,
+  };
+};
+
+var Segment = (p1, p2) => {
+  return {
+    p1: p1,
+    p2: p2
   };
 };
 
@@ -24,6 +31,7 @@ class Map {
 
   constructor() {
     this._points = [];
+    this._segments = [];
     this._state = {
       isDrawing: false
     };
@@ -37,27 +45,21 @@ class Map {
     return (a > b ? a : b);
   }
 
-  _rayIntersects(ray, sp) {
-    if (!sp.n) return;
-    
+  _rayIntersects(ray, seg) {
     // find the slope and intercept of ray
-    //var rayx = Math.cos(ray.a);
-    //var rayy = Math.sin(ray.a);
-    var rayx = ray.dx;
-    var rayy = ray.dy;
     var rayM = undefined;
     var rayB = undefined;
-    if (rayx !== ray.x) {
-      rayM = (rayy - ray.y) / (rayx - ray.x);
-      rayB = ray.y - rayM*ray.x;
+    if (ray.p1.x !== ray.p2.x) {
+      rayM = (ray.p2.y - ray.p1.y) / (ray.p2.x - ray.p1.x);
+      rayB = ray.p1.y - rayM*ray.p1.x;
     }
 
     // find slope and intercept of segment
     var segM = undefined;
     var segB = undefined;
-    if (sp.x !== sp.n.x) {
-      segM = (sp.n.y - sp.y) / (sp.n.x - sp.x);
-      segB = sp.y - segM*sp.x;
+    if (seg.p1.x !== seg.p2.x) {
+      segM = (seg.p2.y - seg.p1.y) / (seg.p2.x - seg.p1.x);
+      segB = seg.p1.y - segM*seg.p1.x;
     }
 
     // don't bother returning an intersection if slopes are the same
@@ -69,10 +71,10 @@ class Map {
       y: undefined
     };
     if (rayM === undefined) {
-      p.x = ray.x;
+      p.x = ray.p1.x;
       p.y = segM*p.x + segB;
     } else if (segM === undefined) {
-      p.x = sp.x;
+      p.x = seg.p1.x;
       p.y = rayM*p.x + rayB;
     } else {
       p.x = (rayB - segB)/(segM - rayM);
@@ -80,49 +82,51 @@ class Map {
     }
 
     // check if point is on segment
-    if (p.x < this._less(sp.x, sp.n.x) || p.x > this._greater(sp.x, sp.n.x)) return;
-    else if (p.x === sp.x) {
-      if (p.y < this._less(sp.y, sp.n.y) || p.y > this._greater(sp.y, sp.n.y)) return;
+    if (p.x < this._less(seg.p1.x, seg.p2.x) || p.x > this._greater(seg.p1.x, seg.p2.x)) return;
+    else if (p.x === seg.p1.x) {
+      if (p.y < this._less(seg.p1.y, seg.p2.y) || p.y > this._greater(seg.p1.y, seg.p2.y)) return;
     }
     // and if point is in direction of ray
-    if ((ray.x - p.x) * (ray.x - rayx) < 0) {
+    if ((ray.p1.x - p.x) * (ray.p1.x - ray.p2.x) < 0) {
       return;
-    } else if ((ray.x - p.x) * (ray.x - rayx) === 0) {
-      if ((ray.y - p.y) * (ray.y - rayy) < 0) return;
+    } else if ((ray.p1.x - p.x) * (ray.p1.x - ray.p2.x) === 0) {
+      if ((ray.p1.y - p.y) * (ray.p1.y - ray.p2.y) < 0) return;
     }
 
     return p;
   }
 
-  addRectangle(x, y, dx, dy) {
-    var topLeft = SegmentPoint(x, y);
-    var topRight = SegmentPoint(x + dx, y);
-    var bottomRight = SegmentPoint(x + dx, y + dy);
-    var bottomLeft = SegmentPoint(x, y + dy);
-    topLeft.n = topRight;
-    topRight.n = bottomRight;
-    bottomRight.n = bottomLeft;
-    bottomLeft.n = topLeft;
+  addSegment(x1, y1, x2, y2) {
+    var p1 = Point(x1, y1);
+    var p2 = Point(x2, y2);
+    this._points.push(p1);
+    this._points.push(p2);
+    var s = Segment(p1, p2);
+    p1.s = s;
+    p2.s = s;
+    this._segments.push(s);
+  }
 
-    this._points.push(topLeft);
-    this._points.push(topRight);
-    this._points.push(bottomRight);
-    this._points.push(bottomLeft);
+  addRectangle(x, y, dx, dy) {
+    this.addSegment(x, y, x+dx, y); // top
+    this.addSegment(x+dx, y, x+dx, y+dy); // right
+    this.addSegment(x+dx, y+dy, x, y+dy); // bottom
+    this.addSegment(x, y+dy, x, y); // left
   }
 
   addPoint(x, y) {
-    var p = SegmentPoint(x, y);
-
+    var p = Point(x, y);
     if (this._state.isDrawing) {
-      if (this._points.length > 0) {
-        this._points[this._points.length - 1].n = p;
-      }
-      this._state.isDrawing = false;
+      this.addSegment(
+        this._state.isDrawing.x,
+        this._state.isDrawing.y,
+        p.x,
+        p.y
+      );
+      this._state.isDrawing = undefined;
     } else {
-      this._state.isDrawing = true;
+      this._state.isDrawing = p;
     }
-
-    this._points.push(p);
   }
 
   draw(context) {
@@ -141,23 +145,18 @@ class Map {
 
     // draw line segments
     context.beginPath();
-    this._points.forEach((point) => {
-      context.moveTo(point.x, point.y);
-      if (point.n) {
-        context.lineTo(point.n.x, point.n.y);
-      }
+    this._segments.forEach((seg) => {
+      context.moveTo(seg.p1.x, seg.p1.y);
+      context.lineTo(seg.p2.x, seg.p2.y);
     });
     context.stroke();
 
     var intersections = [];
 
-    for (var i = 0; i < this._points.length; i++) {
-      var test = this._rayIntersects({
-        x: 300,
-        y: 300,
-        dx: mouse.x,
-        dy: mouse.y
-      }, this._points[i]);
+    var ray = Segment(Point(300, 300), Point(mouse.x, mouse.y));
+
+    for (var i = 0; i < this._segments.length; i++) {
+      var test = this._rayIntersects(ray, this._segments[i]);
 
       if (test) {
         intersections.push(test);
@@ -183,9 +182,8 @@ class Map {
     }
 
     if (this._state.isDrawing) {
-      var p = this._points[this._points.length - 1];
       context.beginPath();
-      context.moveTo(p.x, p.y);
+      context.moveTo(this._state.isDrawing.x, this._state.isDrawing.y);
       context.lineTo(mouse.x, mouse.y);
       context.stroke();
     }
