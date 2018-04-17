@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head><title>Shadow Casting Test</title>
+<style>
+h3 {
+  text-align: center;
+}
+</style>
+<body>
+<h3>ray intersection test</h3>
+<canvas id="doodleArea" width="600" height="600" style="display: block; margin: 0 auto; border: 1px solid black;" />
+
+<script>
+
+var Point = (x, y) => {
+  return {
+    x: x,
+    y: y,
+    s: undefined
+  };
+};
+
+var Segment = (p1, p2) => {
+  return {
+    p1: p1,
+    p2: p2
+  };
+};
+
+class Map {
+
+  constructor() {
+    this._points = [];
+    this._segments = [];
+    this._state = {
+      isDrawing: undefined
+    };
+  }
+
+  _less(a, b) {
+    return (a < b ? a : b);
+  }
+
+  _greater(a, b) {
+    return (a > b ? a : b);
+  }
+
+  _other(x, a, b) {
+    if (x === a && x !== b) {
+      return b;
+    }
+    if (x === b && x !== a) {
+      return a;
+    }
+    return undefined;
+  }
+
+  _angle(p1, p2) {
+    return Math.atan2(p2.y - p1.y, p2.x - p1.x);
+  }
+
+  _rayIntersects(ray, seg) {
+    // find the slope and intercept of ray
+    var rayM = undefined;
+    var rayB = undefined;
+    if (ray.p1.x !== ray.p2.x) {
+      rayM = (ray.p2.y - ray.p1.y) / (ray.p2.x - ray.p1.x);
+      rayB = ray.p1.y - rayM*ray.p1.x;
+    }
+
+    // find slope and intercept of segment
+    var segM = undefined;
+    var segB = undefined;
+    if (seg.p1.x !== seg.p2.x) {
+      segM = (seg.p2.y - seg.p1.y) / (seg.p2.x - seg.p1.x);
+      segB = seg.p1.y - segM*seg.p1.x;
+    }
+
+    // don't bother returning an intersection if slopes are the same
+    if (rayM === segM) return;
+
+    // the point at which the two instersect
+    var p = {
+      x: undefined,
+      y: undefined
+    };
+    if (rayM === undefined) {
+      p.x = ray.p1.x;
+      p.y = segM*p.x + segB;
+    } else if (segM === undefined) {
+      p.x = seg.p1.x;
+      p.y = rayM*p.x + rayB;
+    } else {
+      p.x = (rayB - segB)/(segM - rayM);
+      p.y = rayM*p.x + rayB;
+    }
+
+    // check if point is on segment
+    if (p.x < this._less(seg.p1.x, seg.p2.x) || p.x > this._greater(seg.p1.x, seg.p2.x)) return;
+    else if (p.x === seg.p1.x) {
+      if (p.y < this._less(seg.p1.y, seg.p2.y) || p.y > this._greater(seg.p1.y, seg.p2.y)) return;
+    }
+    // and if point is in direction of ray
+    if ((ray.p1.x - p.x) * (ray.p1.x - ray.p2.x) < 0) {
+      return;
+    } else if ((ray.p1.x - p.x) * (ray.p1.x - ray.p2.x) === 0) {
+      if ((ray.p1.y - p.y) * (ray.p1.y - ray.p2.y) < 0) return;
+    }
+
+    return p;
+  }
+
+  addSegment(x1, y1, x2, y2) {
+    var p1 = Point(x1, y1);
+    var p2 = Point(x2, y2);
+    this._points.push(p1);
+    this._points.push(p2);
+    var s = Segment(p1, p2);
+    p1.s = s;
+    p2.s = s;
+    this._segments.push(s);
+  }
+
+  addRectangle(x, y, dx, dy) {
+    this.addSegment(x, y, x+dx, y); // top
+    this.addSegment(x+dx, y, x+dx, y+dy); // right
+    this.addSegment(x+dx, y+dy, x, y+dy); // bottom
+    this.addSegment(x, y+dy, x, y); // left
+  }
+
+  addPoint(x, y) {
+    var p = Point(x, y);
+    if (this._state.isDrawing) {
+      this.addSegment(
+        this._state.isDrawing.x,
+        this._state.isDrawing.y,
+        p.x,
+        p.y
+      );
+      this._state.isDrawing = undefined;
+    } else {
+      this._state.isDrawing = p;
+    }
+  }
+
+  draw(context) {
+    // draw line segments
+    this._segments.forEach((seg, idx) => {
+      context.save();
+      context.beginPath();
+      context.moveTo(seg.p1.x, seg.p1.y);
+      context.lineTo(seg.p2.x, seg.p2.y);
+      context.stroke();
+      context.restore();
+    });
+
+    this._points.sort((a, b) => {
+      let dAngle = Math.atan2(mouse.y-a.y, mouse.x-a.x) - Math.atan2(mouse.y-b.y, mouse.x-b.x);
+      if (dAngle === 0) {
+      }
+      return dAngle;
+    });
+
+    var uniquePoints = this._points.filter((point, idx, arr) => {
+      //if (idx === 0) return true;
+      //if (point.x !== arr[idx-1].x || point.y !== arr[idx-1].y) return true;
+      //return false;
+      return true;
+    });
+
+    var masterIntersect = [];
+    var openTriangle = false;
+    var newSweep = true;
+    var finalPoint = undefined;
+    var lastSegment = undefined;
+
+    context.save();
+    context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+
+    uniquePoints.forEach((point, pointIdx) => {
+      var intersections = [];
+      intersections.push(point);
+      this._segments.forEach((seg) => {
+        if (point == seg.p1 || point == seg.p2) return;
+        if (point.x === seg.p1.x && point.y === seg.p1.y) return;
+        if (point.x === seg.p2.x && point.y === seg.p2.y) return;
+
+        var ray = Segment(Point(mouse.x, mouse.y), Point(point.x, point.y));
+
+        var intersection = this._rayIntersects(ray, seg);
+
+        if (intersection) {
+          intersection.s = seg;
+          intersection.i = true;
+          intersections.push(intersection);
+        }
+      });
+
+      intersections.sort((a, b) => {
+        return Math.sqrt(Math.pow(a.x - mouse.x, 2) + Math.pow(a.y - mouse.y, 2)) -
+          Math.sqrt(Math.pow(b.x - mouse.x, 2) + Math.pow(b.y - mouse.y, 2));
+      });
+
+      masterIntersect = masterIntersect.concat(intersections);
+
+      if (newSweep) {
+        newSweep = false;
+        if (intersections.length === 1 ||
+            intersections[0].i) {
+          context.beginPath();
+          context.moveTo(intersections[0].x, intersections[0].y);
+          lastSegment = intersections[0].s;
+          finalPoint = intersections[0];
+        } else if (intersections.length > 1) {
+          let testPoint = this._other(intersections[0], intersections[0].s.p1, intersections[0].s.p2);
+          // if nearest point ends a segment, skip, use as final point
+          if (this._angle(testPoint, Point(mouse.x, mouse.y)) - this._angle(intersections[0], Point(mouse.x, mouse.y)) > Math.PI) {
+            context.beginPath();
+            context.moveTo(intersections[1].x, intersections[1].y);
+            lastSegment = intersections[1].s;
+            // use nearest point as final point
+            finalPoint = intersections[0];
+          } else {
+            context.beginPath();
+            context.moveTo(intersections[0].x, intersections[0].y);
+            lastSegment = intersections[0].s;
+            // use far point as final point
+            finalPoint = intersections[1];
+          }
+        }
+      } else {
+        if (intersections[0].i) {
+          // skip
+        } else if (intersections.length === 1) {
+          context.lineTo(intersections[0].x, intersections[0].y);
+          context.lineTo(mouse.x, mouse.y);
+          context.closePath();
+          context.fill();
+          context.beginPath();
+          context.moveTo(intersections[0].x, intersections[0].y);
+          lastSegment = intersections[0].s;
+        } else {
+          // closed point, ...
+          // check if terminating point for last sagment
+          if (intersections[0].s == lastSegment) {
+            context.lineTo(intersections[0].x, intersections[0].y);
+            context.lineTo(mouse.x, mouse.y);
+            context.closePath();
+            context.fill();
+            context.beginPath();
+            context.moveTo(intersections[1].x, intersections[1].y);
+            lastSegment = intersections[1].s;
+          } else {
+            context.lineTo(intersections[1].x, intersections[1].y);
+            context.lineTo(mouse.x, mouse.y);
+            context.closePath();
+            context.fill();
+            context.beginPath();
+            context.moveTo(intersections[0].x, intersections[0].y);
+            lastSegment = intersections[0].s;
+          }
+        }
+      }
+
+    });
+
+    if (finalPoint) {
+      context.lineTo(finalPoint.x, finalPoint.y);
+      context.lineTo(mouse.x, mouse.y);
+      context.closePath();
+      context.fill();
+    }
+
+    context.restore();
+
+    masterIntersect.forEach((p, idx) => {
+      context.fillText(`${idx}`, p.x + 5, p.y);
+    });
+
+    if (this._state.isDrawing) {
+      context.beginPath();
+      context.moveTo(this._state.isDrawing.x, this._state.isDrawing.y);
+      context.lineTo(mouse.x, mouse.y);
+      context.stroke();
+    }
+  }
+
+}
+
+var mouse = {
+  x: undefined,
+  y: undefined
+};
+
+var state = {
+  update: false
+};
+
+function setup() {
+  var canvas = document.getElementById('doodleArea');
+  var context = canvas.getContext('2d');
+  var map = new Map();
+  map.addRectangle(50, 50, canvas.width - 100, canvas.height - 100);
+
+  window.map = map;
+
+  var draw = () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.translate(mouse.x, mouse.y);
+    context.beginPath();
+    context.moveTo(-5, 0);
+    context.lineTo(5, 0);
+    context.moveTo(0, -5);
+    context.lineTo(0, 5);
+    context.stroke();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    map.draw(context);
+  };
+
+  canvas.addEventListener('mousemove', (e) => {
+    mouse.x = e.offsetX;
+    mouse.y = e.offsetY;
+    state.update = true;
+  });
+
+  canvas.addEventListener('click', (e) => {
+    map.addPoint(mouse.x, mouse.y);
+    state.update = true;
+  });
+
+  window.setInterval(() => {
+    if (state.update) {
+      window.requestAnimationFrame(draw);
+      state.update = false;
+    }
+  }, 20);
+
+  state.update = true;
+}
+
+setup();
+
+</script>
+
+</body>
+</html>
