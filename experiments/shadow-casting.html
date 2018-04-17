@@ -157,6 +157,10 @@ class Map {
     this._points.sort((a, b) => {
       let dAngle = Math.atan2(mouse.y-a.y, mouse.x-a.x) - Math.atan2(mouse.y-b.y, mouse.x-b.x);
       if (dAngle === 0) {
+        if (a.x === b.x && a.y === b.y) {
+          a.corner = true;
+          b.corner = true;
+        }
       }
       return dAngle;
     });
@@ -175,7 +179,9 @@ class Map {
     var lastSegment = undefined;
 
     context.save();
-    context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+    context.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    context.strokeStyle = 'black';
+    context.lineWidth = 2;
 
     uniquePoints.forEach((point, pointIdx) => {
       var intersections = [];
@@ -233,6 +239,7 @@ class Map {
           // skip
         } else if (intersections.length === 1) {
           context.lineTo(intersections[0].x, intersections[0].y);
+          context.stroke();
           context.lineTo(mouse.x, mouse.y);
           context.closePath();
           context.fill();
@@ -244,6 +251,7 @@ class Map {
           // check if terminating point for last sagment
           if (intersections[0].s == lastSegment) {
             context.lineTo(intersections[0].x, intersections[0].y);
+            context.stroke();
             context.lineTo(mouse.x, mouse.y);
             context.closePath();
             context.fill();
@@ -252,6 +260,7 @@ class Map {
             lastSegment = intersections[1].s;
           } else {
             context.lineTo(intersections[1].x, intersections[1].y);
+            context.stroke();
             context.lineTo(mouse.x, mouse.y);
             context.closePath();
             context.fill();
@@ -266,6 +275,7 @@ class Map {
 
     if (finalPoint) {
       context.lineTo(finalPoint.x, finalPoint.y);
+      context.stroke();
       context.lineTo(mouse.x, mouse.y);
       context.closePath();
       context.fill();
@@ -300,12 +310,17 @@ function setup() {
   var canvas = document.getElementById('doodleArea');
   var context = canvas.getContext('2d');
   var map = new Map();
-  map.addRectangle(50, 50, canvas.width - 100, canvas.height - 100);
+  //map.addRectangle(50, 50, canvas.width - 100, canvas.height - 100);
+  map.addRectangle(0, 0, canvas.width, canvas.height);
 
   window.map = map;
 
   var draw = () => {
     context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    context.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
     context.translate(mouse.x, mouse.y);
     context.beginPath();
     context.moveTo(-5, 0);
