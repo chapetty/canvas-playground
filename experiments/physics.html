@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head><title>Physics</title>
+<style>
+h3 {
+  text-align: center;
+}
+
+canvas {
+  width: 600px;
+  height: 600px;
+  margin: 0 auto;
+  display: block;
+  border: 1px solid black;
+}
+</style>
+</head>
+<body>
+<h3>physics</h3>
+<canvas id="doodleArea" width="600" height="600"></canvas>
+<script src="common/map.js"></script>
+<script>
+
+class Physics extends Map {
+
+  constructor() {
+    super();
+    this._ball = {
+      x: 300,
+      y: 300,
+      r: 15,
+      v: {
+        x: 0,
+        y: 1
+      }
+    };
+  }
+  
+  tick() {
+    this._segments.forEach((segment) => {
+      this._collision(this._ball, this._ball.r, this._ball.v, segment);
+    });
+    this._ball.x += this._ball.v.x;
+    this._ball.y += this._ball.v.y;
+    // infinite fall on the ball just for now
+    if (this._ball.y > 600) this._ball.y = 0;
+    // gravity factor, should add limit
+    this._ball.v.y += 0.1;
+  }
+
+  _segmentMidpoint(segment) {
+    var x = (segment.p2.x - segment.p1.x) / 2 + segment.p1.x;
+    var y = (segment.p2.y - segment.p1.y) / 2 + segment.p1.y;
+    return Point(x, y);
+  }
+
+  _segmentLength(segment) {
+    return Math.sqrt(Math.pow(segment.p2.x - segment.p1.x, 2) +
+                     Math.pow(segment.p2.y - segment.p1.y, 2));
+  }
+
+  _segmentNorm(segment, point) {
+    if (segment.p1.x === segment.p2.x) {
+      if (point.x < segment.p1.x) return Point(-1,0);
+      return Point(1,0);
+    }
+    if (segment.p1.y === segment.p2.y) {
+      if (point.y < segment.p1.y) return Point(0,-1);
+      return Point(0,1);
+    }
+    var slope = (segment.p2.y - segment.p1.y) / (segment.p2.x - segment.p1.x);
+    var b = segment.p1.y - slope*segment.p1.x;
+    var newSlope = -1 / slope;
+    var x = slope / Math.abs(slope);
+    if (point.y > slope*point.x + b) x = -x;
+    var y = newSlope*x;
+    var norm = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    return Point(x/norm, y/norm);
+  }
+
+  _pointNorm(point) {
+    if (point.x === 0 && point.y === 0) {
+      return Point(0, 0);
+    }
+    var factor = Math.sqrt(Math.pow(point.x, 2), Math.pow(point.y, 2));
+    return Point(point.x/factor, point.y/factor);
+  }
+
+  _collisionPoint(point, radius, motion, colPoint) {
+    var length = this._segmentLength(Segment(point, colPoint));
+    if (length < radius) {
+    }
+  }
+
+  _collision(point, radius, motion, segment) {
+    // find collision point on circle
+    
+    // use norm of line segment
+    var norm = this._segmentNorm(segment, point);
+ 
+    // point on circle is (x, y) + normMotion*radius
+    var collide = Point(point.x + -1*norm.x*radius, point.y + -1*norm.y*radius);
+    var colSeg = Segment(collide, Point(collide.x + motion.x, collide.y + motion.y));
+
+    var colPoint = this._intersects(colSeg, segment);
+    if (colPoint) {
+      var newSegment = Segment(colPoint, Point(colSeg.p2.x, colSeg.p2.y));
+      var length = point.v.x*norm.x + point.v.y*norm.y;
+      point.v.x -= 1.7 * norm.x*length;
+      point.v.y -= 1.7 * norm.y*length;
+      //point.v = this._pointNorm(point.v);
+    }
+
+  }
+
+  click(x, y) {
+    var dx = (this._ball.x - x);
+    var dy = (this._ball.y - y);
+    var norm = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    this._ball.v.x += dx/norm;
+    this._ball.v.y += dy/norm;
+  }
+
+  draw(context) {
+    this._segments.forEach((s) => {
+      context.beginPath();
+      context.moveTo(s.p1.x, s.p1.y);
+      context.lineTo(s.p2.x, s.p2.y);
+      context.stroke();
+      // draw norms for testing purposes
+      var midpoint = this._segmentMidpoint(s);
+      var norm = this._segmentNorm(s, Point(mouse.x, mouse.y));
+      context.beginPath();
+      context.moveTo(midpoint.x, midpoint.y);
+      context.lineTo(midpoint.x + norm.x*20, midpoint.y + norm.y*20);
+      context.stroke();
+    });
+
+    context.beginPath();
+    context.arc(this._ball.x, this._ball.y, this._ball.r, 0, Math.PI*2);
+    context.stroke();
+
+    //this._collision(this._ball, this._ball.r, this._ball.v, null, context);
+
+    if (this._state.isDrawing) {
+      context.save();
+      context.beginPath();
+      context.moveTo(this._state.isDrawing.x, this._state.isDrawing.y);
+      context.lineTo(mouse.x, mouse.y);
+      context.stroke();
+      context.restore();
+    }
+  }
+
+}
+
+var mouse = {
+  x: undefined,
+  y: undefined
+};
+
+var state = {
+  update: true
+};
+
+function setup() {
+  var canvas = document.getElementById('doodleArea');
+  var context = canvas.getContext('2d');
+  var map = new Physics();
+
+  map.addRectangle(10, 10, 580, 580);
+  //map.addSegment(10, 10, 10, 580);
+  //map.addSegment(580, 10, 580, 580);
+
+  var draw = () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    map.draw(context);
+  };
+
+  canvas.addEventListener('click', (e) => {
+    map.addPoint(mouse.x, mouse.y);
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    mouse.x = e.offsetX;
+    mouse.y = e.offsetY;
+  });
+
+  setInterval(() => {
+    if (state.update) {
+      state.update = false;
+      map.tick();
+      window.requestAnimationFrame(draw);
+      state.update = true;
+    }
+  }, 20);
+}
+
+setup();
+
+</script>
+</body>
+</html>
