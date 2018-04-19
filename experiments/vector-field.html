@@ -127,7 +127,7 @@ function draw() {
     ctx.beginPath();
     ctx.moveTo(0, 0);
     if (_roundAngle)
-      ctx.lineTo(Math.sin(roundAngle(dat.x, dat.y)) * _vectorLength, Math.cos(roundAngle(dat.x, dat.y)) * _vectorLength);
+      ctx.lineTo(Math.cos(roundAngle(dat.x, dat.y)) * _vectorLength, Math.sin(roundAngle(dat.x, dat.y)) * _vectorLength);
     else
       ctx.lineTo(dat.x * _vectorLength, dat.y * _vectorLength);
     ctx.stroke();
