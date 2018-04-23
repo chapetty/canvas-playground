@@ -45,6 +45,25 @@ class Map {
     return Math.atan2(p2.y - p1.y, p2.x - p1.x);
   }
 
+  _segmentNorm(segment, point) {
+    if (segment.p1.x === segment.p2.x) {
+      if (point.x < segment.p1.x) return Point(-1,0);
+      return Point(1,0);
+    }
+    if (segment.p1.y === segment.p2.y) {
+      if (point.y < segment.p1.y) return Point(0,-1);
+      return Point(0,1);
+    }
+    var slope = (segment.p2.y - segment.p1.y) / (segment.p2.x - segment.p1.x);
+    var b = segment.p1.y - slope*segment.p1.x;
+    var newSlope = -1 / slope;
+    var x = slope / Math.abs(slope);
+    if (point.y > slope*point.x + b) x = -x;
+    var y = newSlope*x;
+    var norm = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    return Point(x/norm, y/norm);
+  }
+
   _intersects(s1, s2) {
     var p = this._intersection(s1, s2);
     if (!p) return;
