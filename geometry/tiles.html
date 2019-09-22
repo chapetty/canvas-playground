@@ -49,10 +49,6 @@
             return points;
         };
 
-        const polyRad = (n) => {
-            return Math.cos(Math.PI / n);
-        };
-
         const drawRegularTile = (polygon, p, q, translate, scale) => {
             polygon.forEach((point, idx, arr) => {
                 let pointB = arr[idx + 1];
@@ -156,13 +152,6 @@
                 ]
             };
         };
-
-        const setStuff = (n, s) => {
-            scale = s;
-            inc = polyRad(n) * s * 2;
-            oct = learnPolygon(n, 1);
-            field = calculateField(incX, incY, 0, 0, 600, 600);
-        }
 
         const options = {
             '6^3': makeSimpleHex(30),
