@@ -14,7 +14,7 @@
 </head>
 
 <body>
-    <canvas id="doodleArea" width="600" height="600"></canvas>
+    <canvas id="doodleArea" width="900" height="600"></canvas>
     <div>
         <input type="checkbox" id="chk-showPolygons" name="chk-showPolygons" checked />
         <label for="chk-showPolygons">Show Polygons</label>
@@ -97,8 +97,8 @@
 
             return {
                 radius: r,
-                tileSet: [{ shape: oct, layout: calculateField(repX, repY, 0, 0, 600, 600) },
-                { shape: square, layout: calculateField(repX, repY, s, s, 600, 600) }]
+                tileSet: [{ shape: oct, layout: calculateField(repX, repY, 0, 0, doodleArea.width, doodleArea.height) },
+                { shape: square, layout: calculateField(repX, repY, s, s, doodleArea.width, doodleArea.height) }]
             };
         };
 
@@ -112,8 +112,8 @@
             return {
                 radius: r,
                 tileSet: [
-                    { shape: hex, layout: calculateField(repX, repY, 0, 0, 600, 600) },
-                    { shape: hex, layout: calculateField(repX, repY, s, r + r / 2, 600, 600) }
+                    { shape: hex, layout: calculateField(repX, repY, 0, 0, doodleArea.width, doodleArea.height) },
+                    { shape: hex, layout: calculateField(repX, repY, s, r + r / 2, doodleArea.width, doodleArea.height) }
                 ]
             };
         };
@@ -137,18 +137,18 @@
             return {
                 radius: r,
                 tileSet: [
-                    { shape: hex, layout: calculateField(repX, repY, 0, 0, 600, 600) },
-                    { shape: hex, layout: calculateField(repX, repY, offsetX, offsetY, 600, 600) },
-                    { shape: square, layout: calculateField(repX, repY, offsetX, 0, 600, 600) },
-                    { shape: squareB, layout: calculateField(r * (2 * Math.cos(Math.PI / 6) + 1), 3 * r + 2 * Math.cos(Math.PI / 6) * r, -(r / 2 + s) * Math.cos(Math.PI / 3), (r / 2 + s) * Math.sin(Math.PI / 3), 600, 600) },
-                    { shape: squareC, layout: calculateField(r * (2 * Math.cos(Math.PI / 6) + 1), 3 * r + 2 * Math.cos(Math.PI / 6) * r, (r / 2 + s) * Math.cos(Math.PI / 3), (r / 2 + s) * Math.sin(Math.PI / 3), 600, 600) },
-                    { shape: square, layout: calculateField(2 * Math.cos(Math.PI / 6) * r + r, 3 * r + 2 * Math.cos(Math.PI / 6) * scale, 0, offsetY, 600, 600) },
-                    { shape: squareB, layout: calculateField(scale * (2 * Math.cos(Math.PI / 6) + 1), 3 * scale + 2 * Math.cos(Math.PI / 6) * scale, -(scale / 2 + s) * Math.cos(Math.PI / 3) - offsetX, (r / 2 + s) * Math.sin(Math.PI / 3) + offsetY, 600, 600) },
-                    { shape: squareC, layout: calculateField(scale * (2 * Math.cos(Math.PI / 6) + 1), 3 * scale + 2 * Math.cos(Math.PI / 6) * scale, (scale / 2 + s) * Math.cos(Math.PI / 3) - offsetX, (r / 2 + s) * Math.sin(Math.PI / 3) + offsetY, 600, 600) },
-                    { shape: tri, layout: calculateField(repX, repY, 0, r + r * Math.sqrt(3) / 3, 600, 600) },
-                    { shape: tri, layout: calculateField(repX, repY, offsetX, offsetY + r + r * Math.sqrt(3) / 3, 600, 600) },
-                    { shape: triB, layout: calculateField(repX, repY, 0, -r - t, 600, 600) },
-                    { shape: triB, layout: calculateField(repX, repY, offsetX, offsetY - r - t, 600, 600) }
+                    { shape: hex, layout: calculateField(repX, repY, 0, 0, doodleArea.width, doodleArea.height) },
+                    { shape: hex, layout: calculateField(repX, repY, offsetX, offsetY, doodleArea.width, doodleArea.height) },
+                    { shape: square, layout: calculateField(repX, repY, offsetX, 0, doodleArea.width, doodleArea.height) },
+                    { shape: squareB, layout: calculateField(r * (2 * Math.cos(Math.PI / 6) + 1), 3 * r + 2 * Math.cos(Math.PI / 6) * r, -(r / 2 + s) * Math.cos(Math.PI / 3), (r / 2 + s) * Math.sin(Math.PI / 3), doodleArea.width, doodleArea.height) },
+                    { shape: squareC, layout: calculateField(r * (2 * Math.cos(Math.PI / 6) + 1), 3 * r + 2 * Math.cos(Math.PI / 6) * r, (r / 2 + s) * Math.cos(Math.PI / 3), (r / 2 + s) * Math.sin(Math.PI / 3), doodleArea.width, doodleArea.height) },
+                    { shape: square, layout: calculateField(2 * Math.cos(Math.PI / 6) * r + r, 3 * r + 2 * Math.cos(Math.PI / 6) * scale, 0, offsetY, doodleArea.width, doodleArea.height) },
+                    { shape: squareB, layout: calculateField(scale * (2 * Math.cos(Math.PI / 6) + 1), 3 * scale + 2 * Math.cos(Math.PI / 6) * scale, -(scale / 2 + s) * Math.cos(Math.PI / 3) - offsetX, (r / 2 + s) * Math.sin(Math.PI / 3) + offsetY, doodleArea.width, doodleArea.height) },
+                    { shape: squareC, layout: calculateField(scale * (2 * Math.cos(Math.PI / 6) + 1), 3 * scale + 2 * Math.cos(Math.PI / 6) * scale, (scale / 2 + s) * Math.cos(Math.PI / 3) - offsetX, (r / 2 + s) * Math.sin(Math.PI / 3) + offsetY, doodleArea.width, doodleArea.height) },
+                    { shape: tri, layout: calculateField(repX, repY, 0, r + r * Math.sqrt(3) / 3, doodleArea.width, doodleArea.height) },
+                    { shape: tri, layout: calculateField(repX, repY, offsetX, offsetY + r + r * Math.sqrt(3) / 3, doodleArea.width, doodleArea.height) },
+                    { shape: triB, layout: calculateField(repX, repY, 0, -r - t, doodleArea.width, doodleArea.height) },
+                    { shape: triB, layout: calculateField(repX, repY, offsetX, offsetY - r - t, doodleArea.width, doodleArea.height) }
                 ]
             };
         };
@@ -166,9 +166,9 @@
 
         window.setInterval(() => {
             window.requestAnimationFrame(() => {
-                ctx.clearRect(0, 0, 600, 600);
-                q = mouse.x / 600;
-                p = mouse.y / 600;
+                ctx.clearRect(0, 0, doodleArea.width, doodleArea.height);
+                q = mouse.x / doodleArea.width;
+                p = mouse.y / doodleArea.width;
                 tileSet.tileSet.forEach((v) => {
                     v.layout.forEach((point) => {
                         if (document.getElementById('chk-showPolygons').checked)
