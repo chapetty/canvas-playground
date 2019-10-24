@@ -14,6 +14,7 @@
 </head>
 
 <body>
+    <svg id="svg" width="900" height="600"></svg>
     <canvas id="doodleArea" width="900" height="600"></canvas>
     <div>
         <input type="checkbox" id="chk-showPolygons" name="chk-showPolygons" checked />
@@ -22,11 +23,22 @@
         <label for="chk-showDeforms">Show Deforms</label>
         <input type="checkbox" id="chk-parquet" name="chk-parquet" />
         <label for="chk-parquet">Parquet Deformation</label>
+
         <select id="select-tileSet">
             <option value="6^3">6^3</option>
             <option value="8^2-4">8^2-4</option>
             <option value="6-4^2-3">6-4^2-3</option>
         </select>
+    </div>
+
+    <div>
+        <input type="range" id="rng-q" name="rng-q" min="0" max="100" style="width: 900px;" />
+        <input type="range" id="rng-p" name="rng-p" min="0" max="100" style="width: 900px;" />
+    </div>
+
+    <div>
+        <button onclick="drawSVG()">SVG</button>
+        <a href="" id="download-svg">download</a>
     </div>
 
     <script>
@@ -73,6 +85,39 @@
                 ctx.lineTo(val.x * scale + translate.x, val.y * scale + translate.y);
             });
             ctx.stroke();
+        };
+
+        const drawRegularTileSVG = (polygon, p, q, translate, scale) => {
+            let svg = document.getElementById('svg');
+            polygon.forEach((point, idx, arr) => {
+                let pointB = arr[idx + 1];
+                let pointC = arr[idx - 1];
+                if (pointB == undefined) pointB = arr[0];
+                if (pointC == undefined) pointC = arr[arr.length - 1];
+                let x1 = (point.x + (pointB.x - point.x) * p) * scale + translate.x;
+                let y1 = (point.y + (pointB.y - point.y) * p) * scale + translate.y;
+                let x2 = point.x * q * scale + translate.x;
+                let y2 = point.y * q * scale + translate.y;
+                let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y1', y1);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', 'black');
+                svg.append(line);
+
+                line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                x1 = (point.x + (pointC.x - point.x) * p) * scale + translate.x;
+                y1 = (point.y + (pointC.y - point.y) * p) * scale + translate.y;
+                x2 = point.x * q * scale + translate.x;
+                y2 = point.y * q * scale + translate.y
+                line.setAttribute('x1', x1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y1', y1);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', 'black');
+                svg.append(line);
+            });
         };
 
         const calculateField = (incX, incY, offsetX, offsetY, width, height) => {
@@ -164,11 +209,39 @@
             y: 0
         };
 
+        const drawSVG = () => {
+            q = document.getElementById('rng-q').value / 100;
+            p = document.getElementById('rng-p').value / 100;
+            tileSet.tileSet.forEach((v) => {
+                    v.layout.forEach((point) => {
+                        //if (document.getElementById('chk-showPolygons').checked)
+                            //draw(v.shape, point, tileSet.radius);
+                        if (document.getElementById('chk-showDeforms').checked) {
+                          if (document.getElementById('chk-parquet').checked) 
+                            drawRegularTileSVG(v.shape, -point.x / 1200 + p, -point.y / 1200 + q, point, tileSet.radius);
+                          else
+                            drawRegularTileSVG(v.shape, p, q, point, tileSet.radius);
+                        }
+
+                    });
+                });
+        };
+
+        const saveSVG = () => {
+            let svg = document.getElementById('svg');
+            let serializer = new XMLSerializer();
+            let source = serializer.serializeToString(svg);
+            let url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+            document.getElementById('download-svg').href = url;
+        };
+
         window.setInterval(() => {
             window.requestAnimationFrame(() => {
                 ctx.clearRect(0, 0, doodleArea.width, doodleArea.height);
-                q = mouse.x / doodleArea.width;
-                p = mouse.y / doodleArea.width;
+                //q = mouse.x / doodleArea.width;
+                //p = mouse.y / doodleArea.width;
+                q = document.getElementById('rng-q').value / 100;
+                p = document.getElementById('rng-p').value / 100;
                 tileSet.tileSet.forEach((v) => {
                     v.layout.forEach((point) => {
                         if (document.getElementById('chk-showPolygons').checked)
